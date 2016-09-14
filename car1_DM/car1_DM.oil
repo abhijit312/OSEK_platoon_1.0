@@ -1,0 +1,197 @@
+#include "implementation.oil"
+
+CPU ATMEL_AT91SAM7S256
+{
+  OS LEJOS_OSEK
+  {
+    STATUS = EXTENDED;
+    STARTUPHOOK = FALSE;
+    ERRORHOOK = FALSE;
+    SHUTDOWNHOOK = FALSE;
+    PRETASKHOOK = FALSE;
+    POSTTASKHOOK = FALSE;
+    USEGETSERVICEID = FALSE;
+    USEPARAMETERACCESS = FALSE;
+    USERESSCHEDULER = FALSE;
+  };
+
+  /* Definition of application mode */
+  APPMODE appmode1{};
+  
+  /*Events go here*/
+  EVENT TouchBlackEvent
+  {
+	MASK = AUTO;
+  };
+  
+  EVENT TouchWhiteEvent
+  {
+	MASK = AUTO;
+  };
+  
+  EVENT ReadyEvent
+  {
+	MASK = AUTO;
+  };
+  
+  /* Timer */
+  COUNTER TimerCounter
+  {
+	MINCYCLE = 1;
+	MAXALLOWEDVALUE = 10000;
+	TICKSPERBASE = 1;
+  };
+  
+  /* Alarms */
+  
+  ALARM light_sensor_alarm
+  {
+	COUNTER = TimerCounter;
+	ACTION = ACTIVATETASK
+	{
+		TASK = GetCurrentLightSensor;
+	};
+	AUTOSTART = TRUE
+	{
+		ALARMTIME = 1;
+		CYCLETIME = 25;
+		APPMODE = appmode1;
+	};
+  };
+  
+  ALARM motor_control_alarm
+  {
+	COUNTER = TimerCounter;
+	ACTION = ACTIVATETASK
+	{
+		TASK = MotorControlTask;
+	};
+	AUTOSTART = TRUE
+	{
+		ALARMTIME = 1;
+		CYCLETIME = 50;
+		APPMODE = appmode1;
+	};
+  };
+  
+  /* Deadline Enforcer */
+  ALARM light_sensor_deadline
+  {
+	COUNTER = TimerCounter;
+	ACTION = ACTIVATETASK
+	{
+		TASK = deadline_enforcer;
+	};
+	AUTOSTART = TRUE
+	{
+		ALARMTIME = 1;
+		CYCLETIME = 20;
+		APPMODE = appmode1;
+	};
+  };
+  
+  ALARM motor_control_deadline
+  {
+	COUNTER = TimerCounter;
+	ACTION = ACTIVATETASK
+	{
+		TASK = deadline_enforcer;
+	};
+	AUTOSTART = TRUE
+	{
+		ALARMTIME = 1;
+		CYCLETIME = 45;
+		APPMODE = appmode1;
+	};
+  };
+  
+  
+/*  ALARM IdleTaskAlarm
+  {
+	COUNTER = TimerCounter;
+	ACTION = ACTIVATETASK
+	{
+		TASK = IdleTask;
+	};
+	AUTOSTART = TRUE
+	{
+		ALARMTIME = 1;
+		CYCLETIME = 25;
+		APPMODE = appmode1;
+	};
+  }; */
+  
+  /* Tasks go here */
+  TASK StarterTask
+  {
+	AUTOSTART = TRUE
+	{
+		APPMODE = appmode1{};
+	};
+	SCHEDULE = FULL;
+	ACTIVATION = 1;
+	STACKSIZE = 512;
+	PRIORITY = 2;
+  };
+  
+  TASK IdleTask
+  {
+    AUTOSTART = TRUE 
+    {
+      APPMODE = appmode1;
+    };
+    PRIORITY = 1;
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    STACKSIZE = 512; /* Stack size */ 
+  };
+  
+  TASK CalibrateSensorsTask
+  {
+	SCHEDULE = FULL;
+	AUTOSTART = TRUE
+	{
+		APPMODE = appmode1{};
+	};
+	ACTIVATION = 1;
+	STACKSIZE = 512;
+	PRIORITY = 3;
+	RESOURCE = LightSensor;
+	EVENT = TouchBlackEvent;
+	EVENT = TouchWhiteEvent;
+  };
+  
+  TASK MotorControlTask
+  {
+	SCHEDULE = FULL;
+	AUTOSTART = FALSE;
+	ACTIVATION = 1;
+	STACKSIZE = 512;
+	PRIORITY = 2;  
+	EVENT = ReadyEvent;
+  };
+  
+  TASK GetCurrentLightSensor
+  {
+	SCHEDULE = FULL;
+	AUTOSTART = FALSE;
+	ACTIVATION = 1;
+	STACKSIZE = 512;
+	PRIORITY = 2;  	
+  };
+  
+  TASK deadline_enforcer
+  {
+	SCHEDULE = FULL;
+	AUTOSTART = FALSE;
+	ACTIVATION = 1;
+	STACKSIZE = 512;
+	PRIORITY = 2;
+
+  };
+  
+  RESOURCE LightSensor
+  {
+	RESOURCEPROPERTY = STANDARD;
+  };
+};
